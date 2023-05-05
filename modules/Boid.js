@@ -5,7 +5,7 @@ class Boid {
         this.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
         this.acceleration = new Vector(0, 0);
         this.orientation = [new Vector(1, 0), new Vector(0, 1)];
-        this.perception = [100, 120];
+        this.perception = [100, 60];
         this.max_speed = 5;
         this.max_force = 1;
         this.size = 15;
@@ -28,7 +28,6 @@ class Boid {
                 if (angle <= this.perception[1]) {
                     // Separation
                     let away_direction = Vector.subtract(this.position, boid.position);
-                    away_direction.normalize();
                     away_direction.divide(distance);
                     separation.add(away_direction);
 
