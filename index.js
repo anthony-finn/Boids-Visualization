@@ -1,6 +1,6 @@
 const flock = [];
 
-const NUM_BOIDS = 500;
+const NUM_BOIDS = 700;
 
 function init() {
     canvas = document.createElement('CANVAS');

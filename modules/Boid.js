@@ -70,11 +70,21 @@ class Boid {
     }
 
 	edges(width, height) {
-		if (this.position.get(0) <= this.size || this.position.get(0) >= width - this.size)
-			this.velocity.set(0, 0 - this.velocity.get(0));
+        if (this.position.get(0) < 0 - this.size) {
+            this.position.set(0, width + this.size);
+        }
+
+        if (this.position.get(0) > width + this.size) {
+            this.position.set(0, 0 - this.size);
+        }
 		
-        if (this.position.get(1) <= this.size || this.position.get(1) >= height - this.size)
-			this.velocity.set(1, 0 - this.velocity.get(1));
+        if (this.position.get(1) < 0 - this.size) {
+            this.position.set(1, height - this.size);
+        }
+
+        if (this.position.get(1) > height + this.size) {
+            this.position.set(1, 0 - this.size);
+        }
 	}
 
     draw(ctx) {
