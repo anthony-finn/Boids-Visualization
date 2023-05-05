@@ -13,7 +13,7 @@ class Vector {
 
     set(index, value) {
         if (isNaN(index) || index < 0 || index >= this.components.length) {
-            throw new Error('');
+            throw new Error(`Index out of range: ${index}`);
         }
 
         this.components[index] = value;
@@ -56,6 +56,42 @@ class Vector {
         return this;
     }
 
+    multiply(scalar) {
+        for (let i = 0; i < this.dimensions(); i++) {
+            this.set(i, this.get(i) * scalar);
+        }
+
+        return this;
+    }
+    
+    divide(scalar) {
+        for (let i = 0; i < this.dimensions(); i++) {
+            this.set(i, this.get(i) / scalar);
+        }
+
+        return this;
+    }
+
+    normalize() {
+        const magnitude = this.magnitude();
+
+        if (magnitude != 0) {
+            for (let i = 0; i < this.dimensions(); i++) {
+                this.set(i, this.get(i) / magnitude);
+            }
+        }
+
+        return this;
+    }
+
+    truncate(scaler) {
+        const magnitude = this.magnitude();
+        this.normalize();
+        this.multiply(Math.min(magnitude, scaler));
+
+        return this;
+    }
+
     static add(v1, v2) {
         if (v1.dimensions() != v2.dimensions()) {
             throw new Error(`Mismatched vector dimensions: ${v1.dimensions()}!=${v2.dimensions()}`);
@@ -75,10 +111,63 @@ class Vector {
         }
         
         let components = [];
-        for (let i = 0; i < rhs.dimensions(); i++) {
+        for (let i = 0; i < lhs.dimensions(); i++) {
             components[i] = lhs.get(i) - rhs.get(i);
         }
 
         return new Vector(...components);
+    }
+
+    static multiply(v1, scalar) {
+        let components = [];
+        for (let i = 0; i < v1.dimensions(); i++) {
+            components[i] = v1.get(i) * scalar;
+        }
+
+        return new Vector(...components);
+    }
+
+    static divide(v1, scalar) {
+        let components = [];
+        for (let i = 0; i < v1.dimensions(); i++) {
+            components[i] = v1.get(i) / scalar;
+        }
+
+        return new Vector(...components);
+    }
+
+    static dot(lhs, rhs) {
+        if (lhs.dimensions() != rhs.dimensions()) {
+            throw new Error(`Mismatched vector dimensions: ${lhs.dimensions()}!=${rhs.dimensions()}`);
+        }
+
+        let sum = 0.0;
+        for (let i = 0; i < lhs.dimensions(); i++) {
+            sum += lhs.get(i) * rhs.get(i);
+        }
+
+        return sum;
+    }
+    
+    static normalize(v1) {
+        let magnitude = v1.magnitude();
+
+        if (magnitude == 0) {
+            magnitude = 1;
+        }
+
+        let components = [];
+        for (let i = 0; i < v1.dimensions(); i++) {
+            components[i] = v1.get(i) / magnitude;
+        }
+
+        return new Vector(...components);
+    }
+
+    static truncate(v1, scaler) {
+        const magnitude = v1.magnitude();
+        const normalized = Vector.normalize(v1);
+
+        return normalized.multiply(Math.min(magnitude, scaler));
     }
 }
