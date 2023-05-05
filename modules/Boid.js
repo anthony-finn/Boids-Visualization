@@ -1,14 +1,14 @@
 class Boid {
     constructor(x = 0, y = 0) {
-        this.mass = Math.random() * 100;
+        this.mass = Math.random() * 3 + 1;
         this.position = new Vector(x, y);
         this.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
         this.acceleration = new Vector(0, 0);
         this.orientation = [new Vector(1, 0), new Vector(0, 1)];
-        this.perception = [100000, 145];
-        this.max_speed = 10;
-        this.max_force = 10;
-        this.size = this.mass / 3;
+        this.perception = [100, 120];
+        this.max_speed = 5;
+        this.max_force = 1;
+        this.size = 15;
         this.visible = true;
     }
 
@@ -80,8 +80,23 @@ class Boid {
     draw(ctx) {
         if (this.visible) {
             ctx.beginPath();
-            ctx.arc(this.position.get(0), this.position.get(1), this.size, 0, 2 * Math.PI);
-            ctx.fill();
+            ctx.moveTo(this.position.get(0), this.position.get(1));
+
+            let left_point = new Vector(this.size * Math.sin(Math.PI/ 6), this.size * Math.cos(Math.PI/ 6));
+            let new_left_point = Vector.subtract(Vector.multiply(this.orientation[0], left_point.get(0)), Vector.multiply(this.orientation[1], left_point.get(1)));
+            new_left_point.add(this.position);
+
+            let right_point = new Vector(-this.size * Math.sin(Math.PI/ 6), this.size * Math.cos(Math.PI/ 6));
+            let new_right_point = Vector.subtract(Vector.multiply(this.orientation[0], right_point.get(0)), Vector.multiply(this.orientation[1], right_point.get(1)));
+            new_right_point.add(this.position);
+
+            ctx.lineTo(new_left_point.get(0), new_left_point.get(1));
+            ctx.moveTo(this.position.get(0), this.position.get(1));
+            ctx.lineTo(new_right_point.get(0), new_right_point.get(1));
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'white';
+            ctx.stroke();
         }
     }
 }

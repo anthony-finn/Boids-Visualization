@@ -1,6 +1,6 @@
 const flock = [];
 
-const NUM_BOIDS = 300;
+const NUM_BOIDS = 500;
 
 function init() {
     canvas = document.createElement('CANVAS');
@@ -18,6 +18,9 @@ function init() {
 function draw() {
     window.requestAnimationFrame(draw);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
 
     for (let boid of flock) {
         boid.edges(window.innerWidth, window.innerHeight);
