@@ -92,6 +92,12 @@ class Vector {
         return this;
     }
 
+    floor() {
+        for (let i = 0; i < this.dimensions(); i++) {
+            this.set(i, Math.floor(this.get(i)));
+        }
+    }
+
     static add(v1, v2) {
         if (v1.dimensions() != v2.dimensions()) {
             throw new Error(`Mismatched vector dimensions: ${v1.dimensions()}!=${v2.dimensions()}`);
@@ -169,5 +175,11 @@ class Vector {
         const normalized = Vector.normalize(v1);
 
         return normalized.multiply(Math.min(magnitude, scaler));
+    }
+
+    static floor(v1) {
+        for (let i = 0; i < v1.dimensions(); i++) {
+            v1.set(i, Math.floor(v1.get(i)));
+        }
     }
 }

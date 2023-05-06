@@ -1,5 +1,5 @@
 class Boid {
-    constructor(x = 0, y = 0) {
+    constructor(world, x = 0, y = 0) {
         this.mass = Math.random() * 3 + 1;
         this.position = new Vector(x, y);
         this.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
@@ -10,13 +10,19 @@ class Boid {
         this.max_force = 1;
         this.size = 15;
         this.visible = true;
+
+        // Spatial Optimization
+        this.world = world;
+        this.hashed_position = world.hash_position(this.position);
+        world.add(this, this.hashed_position);
     }
 
-    update(boids) {
+    update() {
         let separation = new Vector(0, 0);
         let cohesion = new Vector(0, 0);
         let alignment = new Vector(0, 0);
         let num_boids = 0;
+        const boids = this.world.query(this.hashed_position, this.perception[0]);
         for (const boid of boids) {
             const to_direction = Vector.subtract(boid.position, this.position);
             const distance = to_direction.magnitude();
@@ -66,6 +72,13 @@ class Boid {
 
         this.orientation[1] = Vector.normalize(this.velocity);
         this.orientation[0] = new Vector(this.orientation[1].get(1), -this.orientation[1].get(0));
+
+        // Spatial Optimization
+        const previous_hashed_position = this.hashed_position;
+        this.hashed_position = world.hash_position(this.position);
+        if (previous_hashed_position != this.hashed_position) {
+            world.update(this, previous_hashed_position, this.hashed_position);
+        }
     }
 
 	edges(width, height) {

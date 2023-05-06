@@ -1,6 +1,7 @@
-const flock = [];
+const world = new SpatialHash(100);
+const flock = []
 
-const NUM_BOIDS = 700;
+const NUM_BOIDS = 200;
 
 function init() {
     canvas = document.createElement('CANVAS');
@@ -11,7 +12,7 @@ function init() {
     ctx = canvas.getContext('2d');
 
     for (let i = 0; i < NUM_BOIDS; i++) {
-        flock.push(new Boid(Math.random() * 1980, Math.random() * 1080));
+        flock.push(new Boid(world, Math.random() * 1980, Math.random() * 1080));
     }
 }
 
