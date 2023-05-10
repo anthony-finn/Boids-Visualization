@@ -1,185 +1,233 @@
 class Vector {
+
     constructor(...components) {
         this.components = components;
+        this.dimensions = this.components.length;
+        this._magnitude = null;
+        this._isMagnitudeDirty = true;
     }
 
-    toString() {
-        return this.components.toString();
-    }
-
+    // Getter & Setters
     get(index) {
         return this.components[index];
     }
 
     set(index, value) {
-        if (isNaN(index) || index < 0 || index >= this.components.length) {
-            throw new Error(`Index out of range: ${index}`);
-        }
-
         this.components[index] = value;
     }
 
-    magnitude() {
-        let magnitude = 0.0;
-        for (const component of this.components) {
-            magnitude += Math.pow(component, 2);
+    get magnitude() {
+        if (this._isMagnitudeDirty) {
+            let magnitude = 0.0;
+            for (const component of this.components) {
+                magnitude += Math.pow(component, 2);
+            }
+
+            this._magnitude = Math.sqrt(magnitude);
+            this._isMagnitudeDirty = false;
         }
         
-        return Math.sqrt(magnitude);
+        return this._magnitude;
     }
 
-    dimensions() {
-        return this.components.length;
-    }
-
-    add(v1) {
-        if (this.dimensions() != v1.dimensions()) {
-            throw new Error(`Mismatched vector dimensions: ${this.dimensions()}!=${v1.dimensions()}`);
+    // Functions
+    add(a) {
+        for (let i = 0; i < a.dimensions; i++) {
+            this.components[i] += a.components[i];
         }
 
-        for (let i = 0; i < v1.dimensions(); i++) {
-            this.set(i, this.get(i) + v1.get(i));
-        }
-
+        this._isMagnitudeDirty = true;
         return this;
     }
 
-    subtract(v1) {
-        if (this.dimensions() != v1.dimensions()) {
-            throw new Error(`Mismatched vector dimensions: ${this.dimensions()}!=${v1.dimensions()}`);
+    subtract(a) {
+        for (let i = 0; i < a.dimensions; i++) {
+            this.components[i] -= a.components[i];
         }
 
-        for (let i = 0; i < v1.dimensions(); i++) {
-            this.set(i, this.get(i) - v1.get(i));
-        }
-
+        this._isMagnitudeDirty = true;
         return this;
     }
 
     multiply(scalar) {
-        for (let i = 0; i < this.dimensions(); i++) {
-            this.set(i, this.get(i) * scalar);
+        for (let i = 0; i < this.dimensions; i++) {
+            this.components[i] *= scalar;
         }
 
+        this._isMagnitudeDirty = true;
         return this;
     }
     
     divide(scalar) {
-        for (let i = 0; i < this.dimensions(); i++) {
-            this.set(i, this.get(i) / scalar);
+        for (let i = 0; i < this.dimensions; i++) {
+            this.components[i] /= scalar;
         }
 
+        this._isMagnitudeDirty = true;
         return this;
     }
 
     normalize() {
-        const magnitude = this.magnitude();
+        const magnitude = this.magnitude;
 
-        if (magnitude != 0) {
-            for (let i = 0; i < this.dimensions(); i++) {
-                this.set(i, this.get(i) / magnitude);
+        if (magnitude != 0 && magnitude != 1) {
+            for (let i = 0; i < this.dimensions; i++) {
+                this.components[i] /= magnitude;
             }
+
+            this._isMagnitudeDirty = false;
+            this._magnitude = 1;
         }
 
         return this;
     }
 
     truncate(scaler) {
-        const magnitude = this.magnitude();
-        this.normalize();
-        this.multiply(Math.min(magnitude, scaler));
+        const magnitude = this.magnitude;
+
+        if (magnitude > scaler) {
+            for (let i = 0; i < this.dimensions; i++) {
+                this.components[i] = this.components[i] * scaler / magnitude;
+            }
+
+            this._magnitude = scaler;
+            this._isMagnitudeDirty = false;
+        }
 
         return this;
     }
 
     floor() {
-        for (let i = 0; i < this.dimensions(); i++) {
-            this.set(i, Math.floor(this.get(i)));
+        for (let i = 0; i < this.dimensions; i++) {
+            this.components[i] = Math.floor(this.components[i]);
         }
+
+        this._isMagnitudeDirty = true;
     }
 
-    static add(v1, v2) {
-        if (v1.dimensions() != v2.dimensions()) {
-            throw new Error(`Mismatched vector dimensions: ${v1.dimensions()}!=${v2.dimensions()}`);
+    round() {
+        for (let i = 0; i < this.dimensions; i++) {
+            this.components[i] = Math.floor(this.components[i] + 0.5);
         }
-        
+
+        this._isMagnitudeDirty = true;
+    }
+
+    toString() {
+        return this.components.toString();
+    }
+
+    // Static Functions
+    static add(a, b) {
         let components = [];
-        for (let i = 0; i < v1.dimensions(); i++) {
-            components[i] = v1.get(i) + v2.get(i);
+        for (let i = 0; i < a.dimensions; i++) {
+            components[i] = a.components[i] + b.components[i];
         }
 
         return new Vector(...components);
     }
 
-    static subtract(lhs, rhs) {
-        if (lhs.dimensions() != rhs.dimensions()) {
-            throw new Error(`Mismatched vector dimensions: ${lhs.dimensions()}!=${rhs.dimensions()}`);
-        }
-        
+    static subtract(a, b) {
         let components = [];
-        for (let i = 0; i < lhs.dimensions(); i++) {
-            components[i] = lhs.get(i) - rhs.get(i);
+        for (let i = 0; i < a.dimensions; i++) {
+            components[i] = a.components[i] - b.components[i];
         }
 
         return new Vector(...components);
     }
 
-    static multiply(v1, scalar) {
+    static subtract_with_magnitude(a, b) {
         let components = [];
-        for (let i = 0; i < v1.dimensions(); i++) {
-            components[i] = v1.get(i) * scalar;
+        let magnitude = 0;
+        for (let i = 0; i < a.dimensions; i++) {
+            const difference = a.components[i] - b.components[i];
+            components[i] = difference;
+            magnitude += Math.pow(difference, 2);
+        }
+
+        const new_vector = new Vector(...components);
+        new_vector._isMagnitudeDirty = false;
+        new_vector._magnitude = Math.sqrt(magnitude);
+
+        return new_vector
+    }
+
+    static multiply(a, scalar) {
+        let components = [];
+        for (let i = 0; i < a.dimensions; i++) {
+            components[i] = a.components[i] * scalar;
         }
 
         return new Vector(...components);
     }
 
-    static divide(v1, scalar) {
+    static divide(a, scalar) {
         let components = [];
-        for (let i = 0; i < v1.dimensions(); i++) {
-            components[i] = v1.get(i) / scalar;
+        for (let i = 0; i < a.dimensions; i++) {
+            components[i] = a.components[i] / scalar;
         }
 
         return new Vector(...components);
     }
 
-    static dot(lhs, rhs) {
-        if (lhs.dimensions() != rhs.dimensions()) {
-            throw new Error(`Mismatched vector dimensions: ${lhs.dimensions()}!=${rhs.dimensions()}`);
-        }
-
+    static dot(a, b) {
         let sum = 0.0;
-        for (let i = 0; i < lhs.dimensions(); i++) {
-            sum += lhs.get(i) * rhs.get(i);
+        for (let i = 0; i < a.dimensions; i++) {
+            sum += a.components[i] * b.components[i];
         }
 
         return sum;
     }
     
-    static normalize(v1) {
-        let magnitude = v1.magnitude();
+    static normalize(a) {
+        let magnitude = a.magnitude;
 
-        if (magnitude == 0) {
-            magnitude = 1;
+        if (magnitude != 0 || magnitude != 1) {
+            let components = [];
+            for (let i = 0; i < a.dimensions; i++) {
+                components[i] = a.components[i] / magnitude;
+            }
+    
+            return new Vector(...components); 
+        }
+        else {
+            return new Vector(...a.components); 
+        }
+    }
+
+    static truncate(a, scaler) {
+        const magnitude = a.magnitude;
+
+        if (magnitude > scaler) {
+            let components = [];
+            for (let i = 0; i < this.dimensions; i++) {
+                components[i] = a.components[i] * scaler / magnitude;
+            }
+
+            let new_vector = new Vector(...components);
+            new_vector._isMagnitudeDirty = false;
+            new_vector._magnitude = scaler;
+            return new_vector;
         }
 
+        return new Vector(...a.components);
+    }
+
+    static floor(a) {
         let components = [];
-        for (let i = 0; i < v1.dimensions(); i++) {
-            components[i] = v1.get(i) / magnitude;
+        for (let i = 0; i < a.dimensions; i++) {
+            components[i] = Math.floor(a.components[i]);
         }
 
         return new Vector(...components);
     }
 
-    static truncate(v1, scaler) {
-        const magnitude = v1.magnitude();
-        const normalized = Vector.normalize(v1);
-
-        return normalized.multiply(Math.min(magnitude, scaler));
-    }
-
-    static floor(v1) {
-        for (let i = 0; i < v1.dimensions(); i++) {
-            v1.set(i, Math.floor(v1.get(i)));
+    static round(a) {
+        let components = [];
+        for (let i = 0; i < a.dimensions; i++) {
+            components[i] = Math.floor(a.components[i] + 0.5);
         }
+
+        return new Vector(...components);
     }
 }

@@ -1,114 +1,128 @@
+function szudzikPair(x, y)  {
+    return (x >= y ? (x * x) + x + y : (y * y) + x);
+}
+
 class SpatialHash {
-    constructor(cell_size = 20) {
+    constructor(cell_size) {
         this.cell_size = cell_size;
+        this.cells = {};
+        this.agent_map = {};
         this.size = 0;
-        this.collection = {};
     }
 
-    hash_voxel_position(voxel_position) {
-        const dimensions = voxel_position.dimensions();
+    static get_voxel_hash(voxel) {
+        let dimensions = voxel.dimensions;
         if (dimensions > 1) {
-            let x = voxel_position.get(0);
-            let y = voxel_position.get(1);
+            let x = voxel.get(0);
+            let y = voxel.get(1);
 
-            // Generalized Cantor Pair
-            let result = (x + y) * (x + y + 1) / 2 + y;
+            let result = szudzikPair(x, y);
             for (let i = 0; i < dimensions - 2; i ++) {
-                let n = voxel_position.get(dimensions + i + 1);
-                result = (result + n) * (result + n + 1) / 2 + n;
+                let n = voxel.get(dimensions + i - 1);
+                result = szudzikPair(result, n);
             }
 
-            return {
-                index: result, 
-                position: voxel_position
-            };;
+            return result;
         }
+
+        return voxel.get(0);
+    }
+
+    get_voxel(position) {
+        let rounded_position = Vector.round(position);
+        let voxel = Vector.divide(rounded_position, this.cell_size);
+        voxel.floor();
 
         return {
-            index: voxel_position.get(0), 
-            position: voxel_position
-        };
+            location: voxel,
+            hash: SpatialHash.get_voxel_hash(voxel)
+        }
     }
 
-    hash_position(position) {
-        let voxel_position = Vector.divide(position, this.cell_size);
-        voxel_position.floor();
-        
-        const dimensions = voxel_position.dimensions();
-        if (dimensions > 1) {
-            let x = voxel_position.get(0);
-            let y = voxel_position.get(1);
+    create_cell(voxel_hash) {
+        const new_cell = new Cell();
+        this.cells[voxel_hash] = new_cell;
+        return new_cell;
+    }
 
-            // Generalized Cantor Pair
-            let result = (x + y) * (x + y + 1) / 2 + y;
-            for (let i = 0; i < dimensions - 2; i ++) {
-                let n = voxel_position.get(dimensions + i + 1);
-                result = (result + n) * (result + n + 1) / 2 + n;
+    add(agent) {
+        const voxel_hash = agent.voxel.hash;
+        const unique_id = agent.__unique_id;
+        if (!(unique_id in this.agent_map)) {
+            if (voxel_hash in this.cells) {
+                this.cells[voxel_hash].add(agent);
+            }
+            else {
+                const new_cell = this.create_cell(voxel_hash);
+                new_cell.add(agent);
             }
 
-            return {
-                index: result, 
-                position: voxel_position
-            };;
+            this.agent_map[unique_id] = voxel_hash;
+            this.size++;
         }
-
-        return {
-            index: voxel_position.get(0), 
-            position: voxel_position
-        };
     }
 
-    add(agent, hashed_position) {
-        if (hashed_position.index in this.collection) {
-            this.collection[hashed_position.index].push(agent);
+    remove(agent) {
+        const unique_id = agent.__unique_id;
+        if (unique_id in this.agent_map) {
+            const voxel_hash = this.agent_map[unique_id];
+            this.cells[voxel_hash].remove(agent);
+            delete this.agent_map[unique_id];
+            this.size--;
         }
-        else {
-            this.collection[hashed_position.index] = [agent];
-        }
-
-        this.size += 1;
     }
 
-    remove(agent, hashed_position) {
-        if (hashed_position.index in this.collection) {
-            let voxel = this.collection[hashed_position.index];
-            const index = voxel.indexOf(agent);
-            if (index != -1) {
-                voxel.splice(index, 1);
-                this.size -= 1;
-                return true;
+    update(agent) {
+        const unique_id = agent.__unique_id;
+        if (unique_id in this.agent_map) {
+            const previous_voxel_hash = this.agent_map[unique_id];
+            const voxel_hash = agent.voxel.hash;
+            if (previous_voxel_hash != voxel_hash) {
+                const previous_cell = this.cells[previous_voxel_hash];
+                const index = previous_cell.find(agent);
+                if (index != -1) {
+                    if (previous_cell.remove(agent)) {
+                        this.agent_map[unique_id] = voxel_hash;
+                        if (voxel_hash in this.cells) {
+                            const new_cell = this.cells[voxel_hash];
+                            new_cell.add(agent);
+                        }
+                        else {
+                            const new_cell = this.create_cell(voxel_hash);
+                            new_cell.add(agent);
+                        }
+                    }
+                }
             }
-        }
-        return false;
+        } 
     }
 
-    update(agent, old_hashed_position, new_hashed_position) {
-        this.remove(agent, old_hashed_position);
-        this.add(agent, new_hashed_position);
-    }
-
-    get(index) {
-        if (index in this.collection) {
-            return this.collection[index]
+    get_agents(voxel_hash) {
+        if (voxel_hash in this.cells) {
+            return this.cells[voxel_hash].array;
         }
         return [];
     }
 
-    query(hashed_position, distance) {
+    query(voxel_location, distance) {
         const cells = Math.ceil(distance / this.cell_size);
         let agents = [];
-        let position = hashed_position.position;
-        let dimensions = position.dimensions();
-        
-        const base_vector = new Vector(...Array(dimensions).fill(cells));
-        let start_position = Vector.subtract(position, base_vector);
-        let end_position = Vector.add(position, base_vector);
+        const dimensions = voxel_location.dimensions;
 
-        let c = 0;
-        for (let x = start_position.get(0); x <end_position.get(0); x++) {
-            for (let y = start_position.get(1); y <end_position.get(1); y++) {
-                let hashed_voxel_position = this.hash_voxel_position(new Vector(x, y));
-                agents.push(...this.get(hashed_voxel_position.index));
+        const base_vector = new Vector(...Array(dimensions).fill(cells));
+
+        const start_voxel = Vector.subtract(voxel_location, base_vector);
+        const end_voxel = Vector.add(voxel_location, base_vector);
+
+        for (let x = start_voxel.get(0); x <= end_voxel.get(0); x++) {
+            if (x >= 0) {
+                for (let y = start_voxel.get(1); y <= end_voxel.get(1); y++) {
+                    if (y >= 0) {
+                        const peeked_voxel = new Vector(x, y);
+                        const voxel_hash = SpatialHash.get_voxel_hash(peeked_voxel);
+                        agents.push(...this.get_agents(voxel_hash));
+                    }
+                }
             }
         }
 
