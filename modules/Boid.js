@@ -14,7 +14,7 @@ class Boid {
         this.velocity = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
         this.acceleration = new Vector(0, 0);
         this.orientation = [new Vector(1, 0), new Vector(0, 1)];
-        this.perception = [50, 180];
+        this.perception = [25, 180];
         this.max_speed = 3;
         this.max_force = 40;
         this.size = 15 * this.mass / 5;

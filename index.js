@@ -1,4 +1,4 @@
-const CELL_SIZE = 100;
+const CELL_SIZE = 50;
 const SHOW_GRID = false;
 const world = new SpatialHash(CELL_SIZE);
 const flock = []
@@ -41,6 +41,7 @@ function draw() {
             for (var j = 0; j < numCols; j++) {
                 ctx.beginPath();
                 ctx.rect(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                ctx.strokeStyle = "white";
                 ctx.stroke();
 
 
